@@ -1,0 +1,1 @@
+class BitmapData extends Object {}

@@ -1,0 +1,1 @@
+class Shader extends Object {}
