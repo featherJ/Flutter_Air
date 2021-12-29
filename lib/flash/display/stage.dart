@@ -9,7 +9,15 @@ class Stage extends DisplayObjectContainer {
     WidgetsFlutterBinding.ensureInitialized();
     window.onDrawFrame = $paint;
     window.scheduleFrame();
+    $stage = this;
   }
+
+  /// 请求帧
+  @override
+  void $requestFrame() {
+    window.scheduleFrame();
+  }
+
   @override
   void $paint() {
     super.$paint();

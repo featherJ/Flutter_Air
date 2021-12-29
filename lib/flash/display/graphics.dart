@@ -1,15 +1,23 @@
 import 'package:flutter/painting.dart';
 import 'package:flutter_air/flash/display/bitmap_data.dart';
+import 'package:flutter_air/flash/display/caps_style.dart';
 import 'package:flutter_air/flash/display/graphics_data.dart';
+import 'package:flutter_air/flash/display/joint_style.dart';
+import 'package:flutter_air/flash/display/line_scale_mode.dart';
 import 'package:flutter_air/flash/display/shader.dart';
 import 'package:flutter_air/flash/geom/matrix.dart';
+import 'package:flutter_air/flutter_air.dart';
 
 class _GraphicData {
   Path path = Path();
-  Paint paint = Paint();
+  Paint? fill;
+  Paint? stroke;
 }
 
-/// Graphics 类包含一组可用来创建矢量形状的方法。支持绘制的显示对象包括 Sprite 和 Shape 对象。这些类中的每一个类都包括 graphics 属性，该属性是一个 Graphics 对象。以下是为便于使用而提供的一些辅助函数：drawRect()、drawRoundRect()、drawCircle() 和 drawEllipse()。
+//TODO 注释也需要重新完善
+
+/// Graphics 类包含一组可
+/// 用来创建矢量形状的方法。支持绘制的显示对象包括 Sprite 和 Shape 对象。这些类中的每一个类都包括 graphics 属性，该属性是一个 Graphics 对象。以下是为便于使用而提供的一些辅助函数：drawRect()、drawRoundRect()、drawCircle() 和 drawEllipse()。
 ///
 /// 无法通过 ActionScript 代码直接创建 Graphics 对象。如果调用 new Graphics()，则会引发异常。
 ///
@@ -17,6 +25,15 @@ class _GraphicData {
 class Graphics extends Object {
   final List<_GraphicData> _drawingQueue = [];
   bool _begining = false;
+  DisplayObject? _target;
+
+  Graphics(DisplayObject target) {
+    _target = target;
+  }
+
+  void $requestFrame() {
+    _target!.$requestFrame();
+  }
 
   _GraphicData get _currentGraphicData {
     _GraphicData? cur;
@@ -36,68 +53,116 @@ class Graphics extends Object {
 
   /// 用位图图像填充绘图区。
   void beginBitmapFill(BitmapData bitmap,
-      {Matrix? matrix, bool repeat = true, bool smooth = false}) {}
+      [Matrix? matrix, bool repeat = true, bool smooth = false]) {
+    //TODO
+  }
 
   /// 指定一种简单的单一颜色填充，在绘制时该填充将在随后对其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）的调用中使用。
-  void beginFill(int color, {double alpha = 1}) {
-    //TODO 框架测试代码
-    Paint paint = _currentGraphicData.paint
-      ..color = Color(color)
-      ..style = PaintingStyle.fill;
+  void beginFill(int color, [double alpha = 1]) {
+    Color curColor = Color(color);
+    curColor = curColor.withOpacity(alpha);
+    _currentGraphicData.fill ??= Paint();
+    Paint paint = _currentGraphicData.fill!;
+    paint.color = curColor;
+    paint.style = PaintingStyle.fill;
   }
 
   /// 指定一种渐变填充，用于随后调用对象的其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）。
   void beginGradientFill(
       String type, List<int> colors, List<double> alphas, List<double> ratios,
-      {Matrix? matrix,
+      [Matrix? matrix,
       String spreadMethod = "pad",
       String interpolationMethod = "rgb",
-      double focalPointRatio = 0}) {}
+      double focalPointRatio = 0]) {}
 
   /// 为对象指定着色器填充，供随后调用其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）时使用。
-  void beginShaderFill(Shader shader, {Matrix? matrix}) {}
+  void beginShaderFill(Shader shader, [Matrix? matrix]) {
+    //TODO
+  }
 
   /// 清除绘制到此 [Graphics] 对象的图形，并重置填充和线条样式设置。
-  void clear() {}
+  void clear() {
+    _drawingQueue.clear();
+    _endRecording();
+    $requestFrame();
+  }
 
   /// 将源 [Graphics] 对象中的所有绘图命令复制到执行调用的 [Graphics] 对象中。
-  void copyFrom(Graphics sourceGraphics) {}
+  void copyFrom(Graphics sourceGraphics) {
+    //TODO
+  }
 
   /// 从当前绘图位置到指定的锚点绘制一条三次贝塞尔曲线。
   void cubicCurveTo(double controlX1, double controlY1, double controlX2,
-      double controlY2, double anchorX, double anchorY) {}
+      double controlY2, double anchorX, double anchorY) {
+    //TODO
+  }
 
   /// 使用当前线条样式和由 ([controlX], [controlY]) 指定的控制点绘制一条从当前绘图位置开始到 ([anchorX], [anchorY]) 结束的二次贝塞尔曲线。
   void curveTo(
-      double controlX, double controlY, double anchorX, double anchorY) {}
+      double controlX, double controlY, double anchorX, double anchorY) {
+    //TODO
+  }
 
   /// 绘制一个圆。
-  void drawCircle(double x, double y, double radius) {}
+  void drawCircle(double x, double y, double radius) {
+    final pos = Offset(x, y);
+    final c = Rect.fromCircle(center: pos, radius: radius);
+    _currentGraphicData.path.addOval(c);
+  }
 
   /// 绘制一个椭圆。
-  void drawEllipse(double x, double y, double width, double height) {}
+  void drawEllipse(double x, double y, double width, double height) {
+    //TODO 需要测试这个圆的绘制位置和air是否一致
+    final pos = Offset(x + width / 2, y + height / 2);
+    _currentGraphicData.path.addOval(
+      Rect.fromCenter(
+        center: pos,
+        width: width,
+        height: height,
+      ),
+    );
+  }
 
   /// 提交一系列 [IGraphicsData] 实例来进行绘图。
-  void drawGraphicsData(List<IGraphicsData> graphicsData) {}
+  void drawGraphicsData(List<IGraphicsData> graphicsData) {
+    //TODO
+  }
 
   /// 提交一系列绘制命令。
   void drawPath(List<int> commands, List<double> data,
-      {String winding = "evenOdd"}) {}
+      [String winding = "evenOdd"]) {
+    //TODO
+  }
 
   /// 绘制一个矩形。
   void drawRect(double x, double y, double width, double height) {
     final r = Rect.fromLTWH(x, y, width, height);
     _currentGraphicData.path.addRect(r);
+    $requestFrame();
   }
 
   /// 绘制一个圆角矩形。
   void drawRoundRect(
       double x, double y, double width, double height, double ellipseWidth,
-      {double? ellipseHeight}) {}
+      [double? ellipseHeight]) {
+    final r = RRect.fromLTRBXY(
+      x,
+      y,
+      x + width,
+      y + height,
+      ellipseWidth,
+      ellipseHeight ?? ellipseWidth,
+    );
+    _currentGraphicData.path.addRRect(r);
+    $requestFrame();
+  }
 
   /// 呈现一组三角形（通常用于扭曲位图），并为其指定三维外观。
   void drawTriangles(List<double> vertices,
-      {List<int>? indices, List<int>? uvtData, String culling = "none"}) {}
+      [List<int>? indices, List<int>? uvtData, String culling = "none"]) {
+    //TODO
+  }
 
   /// 对从上一次调用 beginFill()、beginGradientFill() 或 beginBitmapFill() 方法之后添加的直线和曲线应用填充。
   void endFill() {
@@ -106,44 +171,93 @@ class Graphics extends Object {
 
   /// 指定一个位图，用于绘制线条时的线条笔触。
   void lineBitmapStyle(BitmapData bitmap,
-      {Matrix? matrix, bool repeat = true, bool smooth = false}) {}
+      [Matrix? matrix, bool repeat = true, bool smooth = false]) {
+    //TODO
+  }
 
   /// 指定一种渐变，用于绘制线条时的笔触。
   void lineGradientStyle(
       String type, List<int> colors, List<double> alphas, List<double> ratios,
-      {Matrix? matrix,
+      [Matrix? matrix,
       String spreadMethod = "pad",
       String interpolationMethod = "rgb",
-      double focalPointRatio = 0}) {}
+      double focalPointRatio = 0]) {
+    //TODO
+  }
 
   /// 指定一个着色器以用于绘制线条时的线条笔触。
-  void lineShaderStyle(Shader shader, {Matrix? matrix}) {}
+  void lineShaderStyle(Shader shader, [Matrix? matrix]) {
+    //TODO
+  }
 
   /// 指定一种线条样式以用于随后对 lineTo() 或 drawCircle() 等 Graphics 方法的调用。
   void lineStyle(
-      {double? thickness,
+      [double thickness = 0.0,
       int color = 0,
       double alpha = 1.0,
       bool pixelHinting = false,
-      String scaleMode = "normal",
+      String scaleMode = LineScaleMode.NORMAL,
       String? caps,
       String? joints,
-      double miterLimit = 3}) {}
+      double miterLimit = 3]) {
+    //TODO scalemodel 需要实现
+    //TODO pixelHinting 的一致性判断
+    //TODO 判断如果同时fill和stroke 且半透明，应该怎么绘制
+    Color curColor = Color(color);
+    curColor = curColor.withOpacity(alpha);
+    _currentGraphicData.stroke ??= Paint();
+    Paint paint = _currentGraphicData.stroke!;
+    paint.style = PaintingStyle.stroke;
+    paint.color = curColor;
+    paint.strokeWidth = thickness;
+    paint.isAntiAlias = !pixelHinting;
+    if (caps == CapsStyle.ROUND) {
+      paint.strokeCap = StrokeCap.round;
+    } else if (caps == CapsStyle.SQUARE) {
+      paint.strokeCap = StrokeCap.square;
+    } else if (caps == CapsStyle.NONE) {
+      paint.strokeCap = StrokeCap.butt;
+    } else {
+      paint.strokeCap = StrokeCap.round;
+    }
+    if (joints == JointStyle.BEVEL) {
+      paint.strokeJoin = StrokeJoin.bevel;
+    } else if (joints == JointStyle.MITER) {
+      paint.strokeJoin = StrokeJoin.miter;
+    } else if (joints == JointStyle.ROUND) {
+      paint.strokeJoin = StrokeJoin.round;
+    } else {
+      paint.strokeJoin = StrokeJoin.round;
+    }
+    //TODO 这里应该加判断 是否使用了Skia
+    // if (SystemUtils.usingSkia) {
+    paint.strokeMiterLimit = miterLimit;
+    // }
+  }
 
   /// 使用当前线条样式绘制一条从当前绘图位置开始到 ([x], [y]) 结束的直线；当前绘图位置随后会设置为 ([x], [y])。
-  void lineTo(double x, double y) {}
+  void lineTo(double x, double y) {
+    //TODO
+  }
 
   /// 将当前绘图位置移动到 ([x], [y])。
-  void moveTo(double x, double y) {}
+  void moveTo(double x, double y) {
+    //TODO
+  }
 
   /// 查询 [Sprite] 或 [Shape] 对象（也可以是其子对象）的矢量图形内容。
-  List<IGraphicsData> readGraphicsData({bool recurse = true}) {
+  List<IGraphicsData> readGraphicsData([bool recurse = true]) {
     return [];
   }
 
   void $paint(Canvas canvas) {
     for (var graphicData in _drawingQueue) {
-      canvas.drawPath(graphicData.path, graphicData.paint);
+      if (graphicData.fill != null) {
+        canvas.drawPath(graphicData.path, graphicData.fill!);
+      }
+      if (graphicData.stroke != null) {
+        canvas.drawPath(graphicData.path, graphicData.stroke!);
+      }
     }
   }
 }

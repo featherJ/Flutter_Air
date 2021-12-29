@@ -14,7 +14,7 @@ class Shape extends DisplayObject {
   }
 
   Graphics get graphics {
-    _graphics ??= Graphics();
+    _graphics ??= Graphics(this);
     return _graphics!;
   }
 
