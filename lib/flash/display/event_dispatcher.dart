@@ -1,0 +1,1 @@
+class EventDispatcher extends Object {}

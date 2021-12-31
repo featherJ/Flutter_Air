@@ -10,11 +10,13 @@ import 'package:flutter_air/flutter_air.dart';
 
 class _GraphicData {
   Path path = Path();
+  _GraphicData() {
+    //为了模拟 flash 中默认的路径缠绕类型，奇偶缠绕类型。
+    path.fillType = PathFillType.evenOdd;
+  }
   Paint? fill;
   Paint? stroke;
 }
-
-//TODO 注释也需要重新完善
 
 /// Graphics 类包含一组可
 /// 用来创建矢量形状的方法。支持绘制的显示对象包括 Sprite 和 Shape 对象。这些类中的每一个类都包括 graphics 属性，该属性是一个 Graphics 对象。以下是为便于使用而提供的一些辅助函数：drawRect()、drawRoundRect()、drawCircle() 和 drawEllipse()。
@@ -23,7 +25,7 @@ class _GraphicData {
 ///
 /// Graphics 类是最终类；无法从其派生子类。
 class Graphics extends Object {
-  final List<_GraphicData> _drawingQueue = [];
+  final List<_GraphicData> $drawingQueue = [];
   bool _begining = false;
   DisplayObject? _target;
 
@@ -31,8 +33,8 @@ class Graphics extends Object {
     _target = target;
   }
 
-  void $requestFrame() {
-    _target!.$requestFrame();
+  void $requiresFrame() {
+    _target!.$requiresFrame();
   }
 
   _GraphicData get _currentGraphicData {
@@ -40,9 +42,9 @@ class Graphics extends Object {
     if (!_begining) {
       _begining = true;
       cur = _GraphicData();
-      _drawingQueue.add(cur);
+      $drawingQueue.add(cur);
     } else {
-      cur = _drawingQueue.last;
+      cur = $drawingQueue.last;
     }
     return cur;
   }
@@ -82,26 +84,36 @@ class Graphics extends Object {
 
   /// 清除绘制到此 [Graphics] 对象的图形，并重置填充和线条样式设置。
   void clear() {
-    _drawingQueue.clear();
+    $drawingQueue.clear();
     _endRecording();
-    $requestFrame();
+    $requiresFrame();
   }
 
   /// 将源 [Graphics] 对象中的所有绘图命令复制到执行调用的 [Graphics] 对象中。
   void copyFrom(Graphics sourceGraphics) {
-    //TODO
+    $drawingQueue.clear();
+    int sourceLen = sourceGraphics.$drawingQueue.length;
+    for (int i = 0; i < sourceLen; i++) {
+      $drawingQueue.add(sourceGraphics.$drawingQueue[i]);
+    }
+    _endRecording();
+    $requiresFrame();
   }
 
   /// 从当前绘图位置到指定的锚点绘制一条三次贝塞尔曲线。
   void cubicCurveTo(double controlX1, double controlY1, double controlX2,
       double controlY2, double anchorX, double anchorY) {
-    //TODO
+    _currentGraphicData.path
+        .cubicTo(controlX1, controlY1, controlX2, controlY2, anchorX, anchorY);
+    $requiresFrame();
   }
 
   /// 使用当前线条样式和由 ([controlX], [controlY]) 指定的控制点绘制一条从当前绘图位置开始到 ([anchorX], [anchorY]) 结束的二次贝塞尔曲线。
   void curveTo(
       double controlX, double controlY, double anchorX, double anchorY) {
-    //TODO
+    _currentGraphicData.path
+        .quadraticBezierTo(controlX, controlY, anchorX, anchorY);
+    $requiresFrame();
   }
 
   /// 绘制一个圆。
@@ -139,7 +151,7 @@ class Graphics extends Object {
   void drawRect(double x, double y, double width, double height) {
     final r = Rect.fromLTWH(x, y, width, height);
     _currentGraphicData.path.addRect(r);
-    $requestFrame();
+    $requiresFrame();
   }
 
   /// 绘制一个圆角矩形。
@@ -155,7 +167,7 @@ class Graphics extends Object {
       ellipseHeight ?? ellipseWidth,
     );
     _currentGraphicData.path.addRRect(r);
-    $requestFrame();
+    $requiresFrame();
   }
 
   /// 呈现一组三角形（通常用于扭曲位图），并为其指定三维外观。
@@ -202,7 +214,6 @@ class Graphics extends Object {
       double miterLimit = 3]) {
     //TODO scalemodel 需要实现
     //TODO pixelHinting 的一致性判断
-    //TODO 判断如果同时fill和stroke 且半透明，应该怎么绘制
     Color curColor = Color(color);
     curColor = curColor.withOpacity(alpha);
     _currentGraphicData.stroke ??= Paint();
@@ -235,14 +246,16 @@ class Graphics extends Object {
     // }
   }
 
-  /// 使用当前线条样式绘制一条从当前绘图位置开始到 ([x], [y]) 结束的直线；当前绘图位置随后会设置为 ([x], [y])。
-  void lineTo(double x, double y) {
-    //TODO
-  }
-
   /// 将当前绘图位置移动到 ([x], [y])。
   void moveTo(double x, double y) {
-    //TODO
+    _currentGraphicData.path.moveTo(x, y);
+    $requiresFrame();
+  }
+
+  /// 使用当前线条样式绘制一条从当前绘图位置开始到 ([x], [y]) 结束的直线；当前绘图位置随后会设置为 ([x], [y])。
+  void lineTo(double x, double y) {
+    _currentGraphicData.path.lineTo(x, y);
+    $requiresFrame();
   }
 
   /// 查询 [Sprite] 或 [Shape] 对象（也可以是其子对象）的矢量图形内容。
@@ -251,7 +264,7 @@ class Graphics extends Object {
   }
 
   void $paint(Canvas canvas) {
-    for (var graphicData in _drawingQueue) {
+    for (var graphicData in $drawingQueue) {
       if (graphicData.fill != null) {
         canvas.drawPath(graphicData.path, graphicData.fill!);
       }

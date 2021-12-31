@@ -8,13 +8,13 @@ class Stage extends DisplayObjectContainer {
   Stage() {
     WidgetsFlutterBinding.ensureInitialized();
     window.onDrawFrame = $paint;
-    window.scheduleFrame();
+    $requiresFrame();
     $stage = this;
   }
 
   /// 请求帧
   @override
-  void $requestFrame() {
+  void $requiresFrame() {
     window.scheduleFrame();
   }
 
@@ -22,7 +22,7 @@ class Stage extends DisplayObjectContainer {
   void $paint() {
     super.$paint();
     SceneBuilder sceneBuilder = SceneBuilder();
-    ContainerLayer rootLayer = $layer as ContainerLayer;
+    ContainerLayer rootLayer = $outerLayer as ContainerLayer;
     rootLayer.addToScene(sceneBuilder);
     Scene scene = sceneBuilder.build();
     window.render(scene);

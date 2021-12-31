@@ -1,19 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:ui';
+
 import 'package:flutter/rendering.dart';
 import 'package:flutter_air/flash/display/display_object.dart';
+import 'package:flutter_air/flash/display/interactive_object.dart';
 import 'package:flutter_air/flash/display/stage.dart';
 
-class DisplayObjectContainer extends DisplayObject {
-  final TransformLayer _transformLayer = TransformLayer();
-  DisplayObjectContainer() {
-    _transformLayer.transform = Matrix4.identity();
-  }
-
-  @override
-  Layer? get $layer {
-    return _transformLayer;
-  }
-
+class DisplayObjectContainer extends InteractiveObject {
   @override
   void $onAddToStage(Stage stage) {
     super.$onAddToStage(stage);
@@ -37,22 +29,23 @@ class DisplayObjectContainer extends DisplayObject {
   List<DisplayObject> children = [];
   DisplayObject addChild(DisplayObject child) {
     children.add(child);
-    _transformLayer.append(child.$layer!);
+    ContainerLayer containerLayer = super.$innerLayer as ContainerLayer;
+    containerLayer.append(child.$outerLayer);
 
     if (stage != null) {
       child.$onAddToStage(stage!);
     }
-    $requestFrame();
+    $requiresFrame();
     return child;
   }
 
   DisplayObject removeChild(DisplayObject child) {
     children.remove(child);
-    child.$layer!.remove();
+    child.$outerLayer.remove();
     if (stage != null) {
       child.$onRemoveFromStage();
     }
-    $requestFrame();
+    $requiresFrame();
     return child;
   }
 
@@ -62,5 +55,27 @@ class DisplayObjectContainer extends DisplayObject {
     for (var child in children) {
       child.$paint();
     }
+  }
+
+  ///绘制为图片，以便可以添加混合模式和遮罩等
+  @override
+  Picture? $paintToPicture() {
+    super.$paintToPicture();
+    PictureRecorder recorder = PictureRecorder();
+    Canvas canvas = Canvas(recorder);
+    //TODO 这种透明模式会整体添加，与Flash中的透明有差异，需要研究下如何维护一致性问题。整体添加又有整体添加的好处，所以看如何做兼容处理。
+    final paint = Paint();
+    paint.color = Color.fromRGBO(0, 0, 0, alpha);
+    canvas.saveLayer(Rect.zero, paint);
+    for (var child in children) {
+      var curPic = child.$paintToPicture();
+      if (curPic != null) {
+        canvas.drawPicture(curPic);
+      }
+    }
+    canvas.restore();
+    canvas.transform($coreMatrix.storage);
+    Picture picture = recorder.endRecording();
+    return picture;
   }
 }
