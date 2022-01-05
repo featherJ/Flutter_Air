@@ -1,22 +1,13 @@
 import 'package:flutter/painting.dart';
 import 'package:flutter_air/flash/display/bitmap_data.dart';
 import 'package:flutter_air/flash/display/caps_style.dart';
+import 'package:flutter_air/flash/display/graphics_core.dart';
 import 'package:flutter_air/flash/display/graphics_data.dart';
 import 'package:flutter_air/flash/display/joint_style.dart';
 import 'package:flutter_air/flash/display/line_scale_mode.dart';
 import 'package:flutter_air/flash/display/shader.dart';
 import 'package:flutter_air/flash/geom/matrix.dart';
 import 'package:flutter_air/flutter_air.dart';
-
-class _GraphicData {
-  Path path = Path();
-  _GraphicData() {
-    //为了模拟 flash 中默认的路径缠绕类型，奇偶缠绕类型。
-    path.fillType = PathFillType.evenOdd;
-  }
-  Paint? fill;
-  Paint? stroke;
-}
 
 /// Graphics 类包含一组可
 /// 用来创建矢量形状的方法。支持绘制的显示对象包括 Sprite 和 Shape 对象。这些类中的每一个类都包括 graphics 属性，该属性是一个 Graphics 对象。以下是为便于使用而提供的一些辅助函数：drawRect()、drawRoundRect()、drawCircle() 和 drawEllipse()。
@@ -25,7 +16,7 @@ class _GraphicData {
 ///
 /// Graphics 类是最终类；无法从其派生子类。
 class Graphics extends Object {
-  final List<_GraphicData> $drawingQueue = [];
+  final List<$GraphicPathData> $drawingQueue = [];
   bool _begining = false;
   DisplayObject? _target;
 
@@ -37,11 +28,11 @@ class Graphics extends Object {
     _target!.$requiresFrame();
   }
 
-  _GraphicData get _currentGraphicData {
-    _GraphicData? cur;
+  $GraphicPathData get _currentGraphicData {
+    $GraphicPathData? cur;
     if (!_begining) {
       _begining = true;
-      cur = _GraphicData();
+      cur = $GraphicPathData();
       $drawingQueue.add(cur);
     } else {
       cur = $drawingQueue.last;
@@ -75,7 +66,9 @@ class Graphics extends Object {
       [Matrix? matrix,
       String spreadMethod = "pad",
       String interpolationMethod = "rgb",
-      double focalPointRatio = 0]) {}
+      double focalPointRatio = 0]) {
+    //TODO
+  }
 
   /// 为对象指定着色器填充，供随后调用其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）时使用。
   void beginShaderFill(Shader shader, [Matrix? matrix]) {
@@ -263,7 +256,19 @@ class Graphics extends Object {
     return [];
   }
 
-  void $paint(Canvas canvas) {
+  void $paint(Canvas canvas, List<$MaskPathsData>? masks) {
+    //处理遮罩数据
+    if (masks != null) {
+      for (var mask in masks) {
+        if (mask.path != null) {
+          var matrix = mask.matrix;
+          matrix ??= Matrix();
+          canvas.clipPath(mask.path!.transform(matrix.$storage));
+        }
+      }
+    }
+
+    canvas.save();
     for (var graphicData in $drawingQueue) {
       if (graphicData.fill != null) {
         canvas.drawPath(graphicData.path, graphicData.fill!);
@@ -272,5 +277,6 @@ class Graphics extends Object {
         canvas.drawPath(graphicData.path, graphicData.stroke!);
       }
     }
+    canvas.restore();
   }
 }
