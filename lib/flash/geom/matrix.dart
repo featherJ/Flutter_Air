@@ -7,8 +7,6 @@ import 'package:flutter_air/flash/geom/point.dart';
 import 'package:flutter_air/flash/geom/vector_3d.dart';
 
 class Matrix extends Object {
-  static final double _deg_to_rad = math.pi / 180;
-
   Matrix4? _matrix4;
 
   double a, b, c, d, tx, ty;
@@ -98,7 +96,6 @@ class Matrix extends Object {
       [double rotation = 0.0, double tx = 0.0, double ty = 0.0]) {
     var self = this;
     if (rotation != 0) {
-      rotation = rotation / _deg_to_rad;
       var u = math.cos(rotation);
       var v = math.sin(rotation);
       self.a = u * scaleX;
@@ -172,7 +169,6 @@ class Matrix extends Object {
 
   void rotate(double angle) {
     if (angle != 0) {
-      angle = angle / _deg_to_rad;
       var u = math.cos(angle);
       var v = math.sin(angle);
       var ta = a;

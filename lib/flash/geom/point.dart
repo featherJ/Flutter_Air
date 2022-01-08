@@ -3,8 +3,6 @@
 import 'dart:math' as math;
 
 class Point extends Object {
-  static final double _deg_to_rad = math.pi / 180;
-
   double x;
   double y;
   Point([this.x = 0, this.y = 0]);
@@ -55,8 +53,8 @@ class Point extends Object {
   }
 
   static Point polar(double len, double angle) {
-    return Point(len * math.cos(angle / _deg_to_rad),
-        len * math.sin(angle / _deg_to_rad));
+    return Point(len * math.cos(angle / 180 * math.pi),
+        len * math.sin(angle / 180 * math.pi));
   }
 
   void setTo(double xa, double ya) {

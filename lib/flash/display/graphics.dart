@@ -1,13 +1,21 @@
+import 'dart:ui' as ui;
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_air/flash/display/bitmap_data.dart';
 import 'package:flutter_air/flash/display/caps_style.dart';
+import 'package:flutter_air/flash/display/gradient_type.dart';
 import 'package:flutter_air/flash/display/graphics_core.dart';
 import 'package:flutter_air/flash/display/graphics_data.dart';
+import 'package:flutter_air/flash/display/interpolation_method.dart';
 import 'package:flutter_air/flash/display/joint_style.dart';
 import 'package:flutter_air/flash/display/line_scale_mode.dart';
 import 'package:flutter_air/flash/display/shader.dart';
+import 'package:flutter_air/flash/display/spread_method.dart';
 import 'package:flutter_air/flash/geom/matrix.dart';
 import 'package:flutter_air/flutter_air.dart';
+import 'package:vector_math/vector_math_64.dart';
 
 /// Graphics 类包含一组可
 /// 用来创建矢量形状的方法。支持绘制的显示对象包括 Sprite 和 Shape 对象。这些类中的每一个类都包括 graphics 属性，该属性是一个 Graphics 对象。以下是为便于使用而提供的一些辅助函数：drawRect()、drawRoundRect()、drawCircle() 和 drawEllipse()。
@@ -52,6 +60,7 @@ class Graphics extends Object {
 
   /// 指定一种简单的单一颜色填充，在绘制时该填充将在随后对其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）的调用中使用。
   void beginFill(int color, [double alpha = 1]) {
+    color = 0xff000000 | color;
     Color curColor = Color(color);
     curColor = curColor.withOpacity(alpha);
     _currentGraphicData.fill ??= Paint();
@@ -62,12 +71,103 @@ class Graphics extends Object {
 
   /// 指定一种渐变填充，用于随后调用对象的其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）。
   void beginGradientFill(
-      String type, List<int> colors, List<double> alphas, List<double> ratios,
+      String type, List<int> colors, List<double> alphas, List<int> ratios,
       [Matrix? matrix,
-      String spreadMethod = "pad",
-      String interpolationMethod = "rgb",
-      double focalPointRatio = 0]) {
-    //TODO
+      String spreadMethod = SpreadMethod.PAD,
+      String interpolationMethod = InterpolationMethod.RGB,
+      double focalPointRatio = 0.0,
+      double focalRadiusRatio = 0.0,
+      double sweepRatio = 1.0]) {
+    //TODO 测试在各参数不全的情况下，是否与flash中效果一致
+    if (colors.isEmpty ||
+        colors.length != alphas.length ||
+        colors.length != ratios.length) {
+      //TODO 错误处理，如果这三个数组的长度不相等的时候应该做出相应的异常处理
+    }
+
+    List<Color> targetColors = [];
+    for (int i = 0; i < colors.length; i++) {
+      int curColorValue = colors[i];
+      Color curColor = Color(curColorValue);
+      curColor = curColor.withOpacity(alphas[i]);
+      targetColors.add(curColor);
+    }
+    List<double> targetRatios = [];
+    for (int i = 0; i < ratios.length; i++) {
+      targetRatios.add(ratios[i] / 255);
+    }
+
+    TileMode tileMode = TileMode.clamp;
+    if (spreadMethod == SpreadMethod.PAD) {
+      tileMode = TileMode.clamp;
+    } else if (spreadMethod == SpreadMethod.REFLECT) {
+      tileMode = TileMode.mirror;
+    } else if (spreadMethod == SpreadMethod.REPEAT) {
+      tileMode = TileMode.repeated;
+    } else if (spreadMethod == SpreadMethod.DECAL) {
+      tileMode = TileMode.decal;
+    }
+
+    if (matrix == null) {
+      matrix = Matrix();
+      matrix.createGradientBox(200, 200, 0, -100, -100);
+    }
+
+    _currentGraphicData.fill ??= Paint();
+    Paint paint = _currentGraphicData.fill!;
+    paint.isAntiAlias = true;
+    paint.style = PaintingStyle.fill;
+    if (interpolationMethod == InterpolationMethod.LINEAR_RGB) {
+      paint.colorFilter = const ColorFilter.linearToSrgbGamma();
+    } else {
+      paint.colorFilter = null;
+    }
+
+    if (type == GradientType.LINEAR) {
+      paint.shader = ui.Gradient.linear(
+          const Offset(-819.2, 0),
+          const Offset(819.2, 0),
+          targetColors,
+          targetRatios,
+          tileMode,
+          matrix.$storage);
+    } else if (type == GradientType.RADIAL) {
+      if (focalPointRatio > 1.0) {
+        focalPointRatio = 1.0;
+      } else if (focalPointRatio < -1.0) {
+        focalPointRatio = -1.0;
+      }
+
+      if (focalRadiusRatio > 1.0) {
+        focalRadiusRatio = 1.0;
+      } else if (focalRadiusRatio < 0) {
+        focalRadiusRatio = 0;
+      }
+
+      var offsetM = Matrix();
+      //先移动100，在通过matrix移动回来，否则如果center和focal 均为0点，在skia中会报错
+      offsetM.translate(0, -100);
+      offsetM.concat(matrix);
+      paint.shader = ui.Gradient.radial(
+          const Offset(0, 100),
+          819.2,
+          targetColors,
+          targetRatios,
+          tileMode,
+          offsetM.$storage,
+          //原则上下面的这个值应该是819.2，但是会与flash效果不一致，所以设置为了800
+          Offset(800 * focalPointRatio, 100),
+          819.2 * focalRadiusRatio);
+    } else if (type == GradientType.SWEEP) {
+      paint.shader = ui.Gradient.sweep(
+          const Offset(0, 0),
+          targetColors,
+          targetRatios,
+          tileMode,
+          0.0,
+          math.pi * 2 * sweepRatio,
+          matrix.$storage);
+    }
   }
 
   /// 为对象指定着色器填充，供随后调用其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）时使用。
@@ -278,5 +378,17 @@ class Graphics extends Object {
       }
     }
     canvas.restore();
+  }
+}
+
+///矩阵渐变变换
+class GradientMatrix extends GradientTransform {
+  final Matrix4? matrix;
+  const GradientMatrix(this.matrix);
+  @override
+  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
+    Matrix temp = Matrix.$fromNative(matrix!);
+    print(temp);
+    return matrix;
   }
 }
