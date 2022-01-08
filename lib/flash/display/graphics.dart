@@ -15,7 +15,6 @@ import 'package:flutter_air/flash/display/shader.dart';
 import 'package:flutter_air/flash/display/spread_method.dart';
 import 'package:flutter_air/flash/geom/matrix.dart';
 import 'package:flutter_air/flutter_air.dart';
-import 'package:vector_math/vector_math_64.dart';
 
 /// Graphics 类包含一组可
 /// 用来创建矢量形状的方法。支持绘制的显示对象包括 Sprite 和 Shape 对象。这些类中的每一个类都包括 graphics 属性，该属性是一个 Graphics 对象。以下是为便于使用而提供的一些辅助函数：drawRect()、drawRoundRect()、drawCircle() 和 drawEllipse()。
@@ -378,17 +377,5 @@ class Graphics extends Object {
       }
     }
     canvas.restore();
-  }
-}
-
-///矩阵渐变变换
-class GradientMatrix extends GradientTransform {
-  final Matrix4? matrix;
-  const GradientMatrix(this.matrix);
-  @override
-  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
-    Matrix temp = Matrix.$fromNative(matrix!);
-    print(temp);
-    return matrix;
   }
 }
