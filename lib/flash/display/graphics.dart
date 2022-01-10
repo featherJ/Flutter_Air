@@ -68,15 +68,15 @@ class Graphics extends Object {
     paint.style = PaintingStyle.fill;
   }
 
-  /// 指定一种渐变填充，用于随后调用对象的其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）。
-  void beginGradientFill(
-      String type, List<int> colors, List<double> alphas, List<int> ratios,
+  void _finishGradientPaint(Paint paint, String type, List<int> colors,
+      List<double> alphas, List<int> ratios,
       [Matrix? matrix,
       String spreadMethod = SpreadMethod.PAD,
       String interpolationMethod = InterpolationMethod.RGB,
       double focalPointRatio = 0.0,
-      double focalRadiusRatio = 0.0,
-      double sweepRatio = 1.0]) {
+      double focalRadiusRatio = 0.0, //放射填充的中心比例
+      double sweepRatio = 1.0 //扫描田中的角度比例
+      ]) {
     //TODO 测试在各参数不全的情况下，是否与flash中效果一致
     if (colors.isEmpty ||
         colors.length != alphas.length ||
@@ -112,10 +112,7 @@ class Graphics extends Object {
       matrix.createGradientBox(200, 200, 0, -100, -100);
     }
 
-    _currentGraphicData.fill ??= Paint();
-    Paint paint = _currentGraphicData.fill!;
     paint.isAntiAlias = true;
-    paint.style = PaintingStyle.fill;
     if (interpolationMethod == InterpolationMethod.LINEAR_RGB) {
       paint.colorFilter = const ColorFilter.linearToSrgbGamma();
     } else {
@@ -167,6 +164,33 @@ class Graphics extends Object {
           math.pi * 2 * sweepRatio,
           matrix.$storage);
     }
+  }
+
+  /// 指定一种渐变填充，用于随后调用对象的其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）。
+  void beginGradientFill(
+      String type, List<int> colors, List<double> alphas, List<int> ratios,
+      [Matrix? matrix,
+      String spreadMethod = SpreadMethod.PAD,
+      String interpolationMethod = InterpolationMethod.RGB,
+      double focalPointRatio = 0.0,
+      double focalRadiusRatio = 0.0, //放射填充的中心比例
+      double sweepRatio = 1.0 //扫描田中的角度比例
+      ]) {
+    _currentGraphicData.fill ??= Paint();
+    Paint paint = _currentGraphicData.fill!;
+    paint.style = PaintingStyle.fill;
+    _finishGradientPaint(
+        paint,
+        type,
+        colors,
+        alphas,
+        ratios,
+        matrix,
+        spreadMethod,
+        interpolationMethod,
+        focalPointRatio,
+        focalRadiusRatio,
+        sweepRatio);
   }
 
   /// 为对象指定着色器填充，供随后调用其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）时使用。
@@ -281,12 +305,29 @@ class Graphics extends Object {
 
   /// 指定一种渐变，用于绘制线条时的笔触。
   void lineGradientStyle(
-      String type, List<int> colors, List<double> alphas, List<double> ratios,
+      String type, List<int> colors, List<double> alphas, List<int> ratios,
       [Matrix? matrix,
       String spreadMethod = "pad",
       String interpolationMethod = "rgb",
-      double focalPointRatio = 0]) {
-    //TODO
+      double focalPointRatio = 0,
+      double focalRadiusRatio = 0.0, //放射填充的中心比例
+      double sweepRatio = 1.0 //扫描田中的角度比例
+      ]) {
+    _currentGraphicData.stroke ??= Paint();
+    Paint paint = _currentGraphicData.stroke!;
+    paint.style = PaintingStyle.stroke;
+    _finishGradientPaint(
+        paint,
+        type,
+        colors,
+        alphas,
+        ratios,
+        matrix,
+        spreadMethod,
+        interpolationMethod,
+        focalPointRatio,
+        focalRadiusRatio,
+        sweepRatio);
   }
 
   /// 指定一个着色器以用于绘制线条时的线条笔触。
@@ -370,9 +411,15 @@ class Graphics extends Object {
     canvas.save();
     for (var graphicData in $drawingQueue) {
       if (graphicData.fill != null) {
+        if (graphicData.fill!.shader != null) {
+          graphicData.fill!.color = Colors.white;
+        }
         canvas.drawPath(graphicData.path, graphicData.fill!);
       }
       if (graphicData.stroke != null) {
+        if (graphicData.stroke!.shader != null) {
+          graphicData.stroke!.color = Colors.white;
+        }
         canvas.drawPath(graphicData.path, graphicData.stroke!);
       }
     }
