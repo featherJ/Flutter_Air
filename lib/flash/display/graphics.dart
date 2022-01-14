@@ -6,15 +6,24 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_air/flash/display/bitmap_data.dart';
 import 'package:flutter_air/flash/display/caps_style.dart';
 import 'package:flutter_air/flash/display/gradient_type.dart';
+import 'package:flutter_air/flash/display/graphics_bitmap_fill.dart';
 import 'package:flutter_air/flash/display/graphics_core.dart';
-import 'package:flutter_air/flash/display/graphics_data.dart';
+import 'package:flutter_air/flash/display/graphics_path.dart';
+import 'package:flutter_air/flash/display/graphics_shader_fill.dart';
+import 'package:flutter_air/flash/display/graphics_stroke.dart';
+import 'package:flutter_air/flash/display/graphics_triangle_path.dart';
+import 'package:flutter_air/flash/display/i_graphics_data.dart';
+import 'package:flutter_air/flash/display/graphics_end_fill.dart';
+import 'package:flutter_air/flash/display/graphics_gradient_fill.dart';
 import 'package:flutter_air/flash/display/graphics_path_command.dart';
 import 'package:flutter_air/flash/display/graphics_path_winding.dart';
+import 'package:flutter_air/flash/display/graphics_solid_fill.dart';
 import 'package:flutter_air/flash/display/interpolation_method.dart';
 import 'package:flutter_air/flash/display/joint_style.dart';
 import 'package:flutter_air/flash/display/line_scale_mode.dart';
 import 'package:flutter_air/flash/display/shader.dart';
 import 'package:flutter_air/flash/display/spread_method.dart';
+import 'package:flutter_air/flash/display/triangle_culling.dart';
 import 'package:flutter_air/flash/geom/matrix.dart';
 import 'package:flutter_air/flutter_air.dart';
 
@@ -277,7 +286,47 @@ class Graphics extends Object {
 
   /// 提交一系列 [IGraphicsData] 实例来进行绘图。
   void drawGraphicsData(List<IGraphicsData> graphicsData) {
-    //TODO
+    for (var element in graphicsData) {
+      if (element is GraphicsSolidFill) {
+        GraphicsSolidFill solidFill = element;
+        beginFill(solidFill.color, solidFill.alpha);
+      } else if (element is GraphicsBitmapFill) {
+        GraphicsBitmapFill bitmapFill = element;
+        //TODO 测试如果bitmapdata为null，和flash中效果是否一致
+        beginBitmapFill(bitmapFill.bitmapData!, bitmapFill.matrix,
+            bitmapFill.repeat, bitmapFill.smooth);
+      } else if (element is GraphicsEndFill) {
+        endFill();
+      } else if (element is GraphicsGradientFill) {
+        GraphicsGradientFill gradientFill = element;
+        //TODO 测试如果colors alphas ratios为null，和flash中效果是否一致
+        beginGradientFill(
+            gradientFill.type,
+            gradientFill.colors!,
+            gradientFill.alphas!,
+            gradientFill.ratios!,
+            gradientFill.matrix,
+            gradientFill.spreadMethod,
+            gradientFill.interpolationMethod,
+            gradientFill.focalPointRatio,
+            gradientFill.focalRadiusRatio,
+            gradientFill.sweepRatio);
+      } else if (element is GraphicsPath) {
+        GraphicsPath graphicsPath = element;
+        drawPath(
+            graphicsPath.commands, graphicsPath.data, graphicsPath.winding);
+      } else if (element is GraphicsShaderFill) {
+        GraphicsShaderFill shaderFill = element;
+        //TODO 测试如果 shader 为null，和flash中效果是否一致
+        beginShaderFill(shaderFill.shader!, shaderFill.matrix);
+      } else if (element is GraphicsStroke) {
+        GraphicsStroke stroke = element;
+        //TODO
+      } else if (element is GraphicsTrianglePath) {
+        GraphicsTrianglePath trianglePath = element;
+        //TODO
+      }
+    }
   }
 
   /// 提交一系列绘制命令。
@@ -386,7 +435,9 @@ class Graphics extends Object {
 
   /// 呈现一组三角形（通常用于扭曲位图），并为其指定三维外观。
   void drawTriangles(List<double> vertices,
-      [List<int>? indices, List<int>? uvtData, String culling = "none"]) {
+      [List<int>? indices,
+      List<int>? uvtData,
+      String culling = TriangleCulling.NONE]) {
     //TODO
   }
 

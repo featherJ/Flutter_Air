@@ -9,6 +9,6 @@ class MyApp extends Stage {
   MyApp() {
     // addChild(MaskTest());
     // addChild(GraphicsTest());
-    addChild(DrawPathTest());
+    // addChild(DrawPathTest());
   }
 }
