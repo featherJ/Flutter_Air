@@ -55,14 +55,16 @@ class Shape extends DisplayObject {
     super.$paintToPath();
     var clipPath = Path();
     for (int i = 0; i < graphics.$drawingQueue.length; i++) {
-      var path = graphics.$drawingQueue[i].path;
+      var path = graphics.$drawingQueue[i].$path;
       /* TODO 如下两个屏蔽的方法效果更合理，但是addpath的效果和flash中的一致。
       两者的区别在于，combine方法会保留因为在同一区域重复绘制的奇偶裁剪效果。（合理效果）
       但是addpath会直接舍弃奇偶裁剪效果，将取路径外轮廓。（air效果）
       */
       // path = path.transform($getMatrix().$storage);
       // clipPath = Path.combine(PathOperation.union, clipPath, path);
-      clipPath.addPath(path, Offset.zero, matrix4: $getMatrix().$storage);
+      if (path != null) {
+        clipPath.addPath(path, Offset.zero, matrix4: $getMatrix().$storage);
+      }
     }
     return clipPath;
   }

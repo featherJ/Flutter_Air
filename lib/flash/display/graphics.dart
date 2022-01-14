@@ -8,6 +8,8 @@ import 'package:flutter_air/flash/display/caps_style.dart';
 import 'package:flutter_air/flash/display/gradient_type.dart';
 import 'package:flutter_air/flash/display/graphics_core.dart';
 import 'package:flutter_air/flash/display/graphics_data.dart';
+import 'package:flutter_air/flash/display/graphics_path_command.dart';
+import 'package:flutter_air/flash/display/graphics_path_winding.dart';
 import 'package:flutter_air/flash/display/interpolation_method.dart';
 import 'package:flutter_air/flash/display/joint_style.dart';
 import 'package:flutter_air/flash/display/line_scale_mode.dart';
@@ -45,6 +47,28 @@ class Graphics extends Object {
       cur = $drawingQueue.last;
     }
     return cur;
+  }
+
+  $GraphicPathData _getGraphicDataForDrawPath() {
+    //之所以这么做，是因为 DrawPath 实际上是使用的一条全新的path来实现的
+    var current = _currentGraphicData;
+    if (current.$path == null) {
+      return current;
+    }
+    $GraphicPathData cloneData = $GraphicPathData();
+    cloneData.fill = current.fill;
+    cloneData.stroke = current.stroke;
+    $drawingQueue.add(cloneData);
+    return cloneData;
+  }
+
+  void _endGraphicDataForDrawPath() {
+    //之所以这么做，是因为 DrawPath 实际上是使用的一条全新的path来实现的
+    var current = _currentGraphicData;
+    $GraphicPathData cloneData = $GraphicPathData();
+    cloneData.fill = current.fill;
+    cloneData.stroke = current.stroke;
+    $drawingQueue.add(cloneData);
   }
 
   void _endRecording() {
@@ -195,7 +219,7 @@ class Graphics extends Object {
 
   /// 为对象指定着色器填充，供随后调用其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）时使用。
   void beginShaderFill(Shader shader, [Matrix? matrix]) {
-    //TODO
+    //TODO 这个功能恐怕得等到flutter开放自定义Shader功能之后才能完成
   }
 
   /// 清除绘制到此 [Graphics] 对象的图形，并重置填充和线条样式设置。
@@ -241,7 +265,6 @@ class Graphics extends Object {
 
   /// 绘制一个椭圆。
   void drawEllipse(double x, double y, double width, double height) {
-    //TODO 需要测试这个圆的绘制位置和air是否一致
     final pos = Offset(x + width / 2, y + height / 2);
     _currentGraphicData.path.addOval(
       Rect.fromCenter(
@@ -259,8 +282,83 @@ class Graphics extends Object {
 
   /// 提交一系列绘制命令。
   void drawPath(List<int> commands, List<double> data,
-      [String winding = "evenOdd"]) {
-    //TODO
+      [String winding = GraphicsPathWinding.EVEN_ODD]) {
+    var path = _getGraphicDataForDrawPath().path;
+    if (winding == GraphicsPathWinding.NON_ZERO) {
+      path.fillType = PathFillType.nonZero;
+    } else {
+      path.fillType = PathFillType.evenOdd;
+    }
+    int dataIndex = 0;
+    for (int i = 0; i < commands.length; i++) {
+      var cmd = commands[i];
+      if (cmd == GraphicsPathCommand.NO_OP) {
+        //do nothing
+      } else if (cmd == GraphicsPathCommand.MOVE_TO) {
+        if (dataIndex + 1 < data.length) {
+          path.moveTo(data[dataIndex++], data[dataIndex++]);
+        } else if (dataIndex == data.length) {
+          path.moveTo(0, 0);
+        } else {
+          //TODO 错误机制要和air中一样
+          throw ArgumentError("Error #2004: One of the parameters is invalid.");
+        }
+      } else if (cmd == GraphicsPathCommand.LINE_TO) {
+        if (dataIndex + 1 < data.length) {
+          path.lineTo(data[dataIndex++], data[dataIndex++]);
+        } else if (dataIndex == data.length) {
+          path.lineTo(0, 0);
+        } else {
+          //TODO 错误机制要和air中一样
+          throw ArgumentError("Error #2004: One of the parameters is invalid.");
+        }
+      } else if (cmd == GraphicsPathCommand.CURVE_TO) {
+        if (dataIndex + 3 < data.length) {
+          path.quadraticBezierTo(data[dataIndex++], data[dataIndex++],
+              data[dataIndex++], data[dataIndex++]);
+        } else if (dataIndex == data.length) {
+          path.quadraticBezierTo(0, 0, 0, 0);
+        } else {
+          //TODO 错误机制要和air中一样
+          throw ArgumentError("Error #2004: One of the parameters is invalid.");
+        }
+      } else if (cmd == GraphicsPathCommand.WIDE_MOVE_TO) {
+        if (dataIndex + 3 < data.length) {
+          dataIndex++;
+          dataIndex++;
+          path.moveTo(data[dataIndex++], data[dataIndex++]);
+        } else if (dataIndex == data.length) {
+          path.moveTo(0, 0);
+        } else {
+          //TODO 错误机制要和air中一样
+          throw ArgumentError("Error #2004: One of the parameters is invalid.");
+        }
+      } else if (cmd == GraphicsPathCommand.WIDE_LINE_TO) {
+        if (dataIndex + 3 < data.length) {
+          dataIndex++;
+          dataIndex++;
+          path.lineTo(data[dataIndex++], data[dataIndex++]);
+        } else if (dataIndex == data.length) {
+          path.lineTo(0, 0);
+        } else {
+          //TODO 错误机制要和air中一样
+          throw ArgumentError("Error #2004: One of the parameters is invalid.");
+        }
+      } else if (cmd == GraphicsPathCommand.CUBIC_CURVE_TO) {
+        if (dataIndex + 5 < data.length) {
+          path.cubicTo(data[dataIndex++], data[dataIndex++], data[dataIndex++],
+              data[dataIndex++], data[dataIndex++], data[dataIndex++]);
+        } else if (dataIndex == data.length) {
+          path.cubicTo(0, 0, 0, 0, 0, 0);
+        } else {
+          //TODO 错误机制要和air中一样
+          throw ArgumentError("Error #2004: One of the parameters is invalid.");
+        }
+      } else {
+        //do nothing
+      }
+    }
+    _endGraphicDataForDrawPath();
   }
 
   /// 绘制一个矩形。
@@ -332,7 +430,7 @@ class Graphics extends Object {
 
   /// 指定一个着色器以用于绘制线条时的线条笔触。
   void lineShaderStyle(Shader shader, [Matrix? matrix]) {
-    //TODO
+    //TODO 这个功能恐怕得等到flutter开放自定义Shader功能之后才能完成
   }
 
   /// 指定一种线条样式以用于随后对 lineTo() 或 drawCircle() 等 Graphics 方法的调用。
@@ -410,17 +508,19 @@ class Graphics extends Object {
 
     canvas.save();
     for (var graphicData in $drawingQueue) {
-      if (graphicData.fill != null) {
-        if (graphicData.fill!.shader != null) {
-          graphicData.fill!.color = Colors.white;
+      if (graphicData.$path != null) {
+        if (graphicData.fill != null) {
+          if (graphicData.fill!.shader != null) {
+            graphicData.fill!.color = Colors.white;
+          }
+          canvas.drawPath(graphicData.$path!, graphicData.fill!);
         }
-        canvas.drawPath(graphicData.path, graphicData.fill!);
-      }
-      if (graphicData.stroke != null) {
-        if (graphicData.stroke!.shader != null) {
-          graphicData.stroke!.color = Colors.white;
+        if (graphicData.stroke != null) {
+          if (graphicData.stroke!.shader != null) {
+            graphicData.stroke!.color = Colors.white;
+          }
+          canvas.drawPath(graphicData.$path!, graphicData.stroke!);
         }
-        canvas.drawPath(graphicData.path, graphicData.stroke!);
       }
     }
     canvas.restore();

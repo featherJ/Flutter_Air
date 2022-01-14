@@ -3,10 +3,15 @@ import 'package:flutter_air/flash/geom/matrix.dart';
 
 //路径渲染数据
 class $GraphicPathData {
-  Path path = Path();
-  $GraphicPathData() {
+  Path? $path;
+
+  Path get path {
     //为了模拟 flash 中默认的路径缠绕类型，奇偶缠绕类型。
-    path.fillType = PathFillType.evenOdd;
+    if ($path == null) {
+      $path = Path();
+      $path!.fillType = PathFillType.evenOdd;
+    }
+    return $path!;
   }
 
   Paint? fill;
