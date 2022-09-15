@@ -13,7 +13,7 @@ class GraphicsTrianglePath extends Object
   List<int>? indices;
 
   /// 由用于应用纹理映射的标准坐标构成的矢量。
-  List<double>? uvtData;
+  List<int>? uvtData;
 
   /// 由数字构成的矢量，其中的每一对数字将被视为一个点（一个 x, y 对）。
   List<double>? vertices;

@@ -90,6 +90,18 @@ class Graphics extends Object {
     //TODO
   }
 
+  /// 用位图图像填充绘图区。
+  void beginBitmapFillTest(ui.Image image,
+      [Matrix? matrix, bool repeat = true, bool smooth = false]) {
+    _currentGraphicData.fill ??= Paint();
+    Paint paint = _currentGraphicData.fill!;
+    paint.style = PaintingStyle.fill;
+    paint.isAntiAlias = true;
+    var imageShader = ui.ImageShader(
+        image, TileMode.clamp, TileMode.clamp, Matrix4.identity().storage);
+    paint.shader = imageShader;
+  }
+
   /// 指定一种简单的单一颜色填充，在绘制时该填充将在随后对其他 [Graphics] 方法（如 [lineTo] 或 [drawCircle]）的调用中使用。
   void beginFill(int color, [double alpha = 1]) {
     color = 0xff000000 | color;
@@ -321,10 +333,50 @@ class Graphics extends Object {
         beginShaderFill(shaderFill.shader!, shaderFill.matrix);
       } else if (element is GraphicsStroke) {
         GraphicsStroke stroke = element;
-        //TODO
+        if (stroke.fill is GraphicsSolidFill) {
+          lineStyle(
+              stroke.thickness,
+              (stroke.fill as GraphicsSolidFill).color,
+              (stroke.fill as GraphicsSolidFill).alpha,
+              stroke.pixelHinting,
+              stroke.scaleMode,
+              stroke.caps,
+              stroke.joints,
+              stroke.miterLimit);
+        } else {
+          //TODO 测试如下几个叹号的，如果为null和flash里的效果是否一致
+          lineStyle(stroke.thickness, 0, 1, stroke.pixelHinting,
+              stroke.scaleMode, stroke.caps, stroke.joints, stroke.miterLimit);
+          if (stroke.fill is GraphicsGradientFill) {
+            lineGradientStyle(
+                (stroke.fill as GraphicsGradientFill).type,
+                (stroke.fill as GraphicsGradientFill).colors!,
+                (stroke.fill as GraphicsGradientFill).alphas!,
+                (stroke.fill as GraphicsGradientFill).ratios!,
+                (stroke.fill as GraphicsGradientFill).matrix,
+                (stroke.fill as GraphicsGradientFill).spreadMethod,
+                (stroke.fill as GraphicsGradientFill).interpolationMethod,
+                (stroke.fill as GraphicsGradientFill).focalPointRatio,
+                (stroke.fill as GraphicsGradientFill).focalRadiusRatio,
+                (stroke.fill as GraphicsGradientFill).sweepRatio);
+          } else if (stroke.fill is GraphicsBitmapFill) {
+            lineBitmapStyle(
+                (stroke.fill as GraphicsBitmapFill).bitmapData!,
+                (stroke.fill as GraphicsBitmapFill).matrix,
+                (stroke.fill as GraphicsBitmapFill).repeat,
+                (stroke.fill as GraphicsBitmapFill).smooth);
+          } else if (stroke.fill is GraphicsShaderFill) {
+            lineShaderStyle((stroke.fill as GraphicsShaderFill).shader!,
+                (stroke.fill as GraphicsShaderFill).matrix);
+          } else {
+            //TODO 测试如果全都不是的情况下flash中应该是什么效果
+          }
+        }
       } else if (element is GraphicsTrianglePath) {
+        //TODO 测试如下几个叹号的，如果为null和flash里的效果是否一致
         GraphicsTrianglePath trianglePath = element;
-        //TODO
+        drawTriangles(trianglePath.vertices!, trianglePath.indices,
+            trianglePath.uvtData, trianglePath.culling);
       }
     }
   }
@@ -546,6 +598,7 @@ class Graphics extends Object {
   }
 
   void $paint(Canvas canvas, List<$MaskPathsData>? masks) {
+    print('printd');
     //处理遮罩数据
     if (masks != null) {
       for (var mask in masks) {

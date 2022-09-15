@@ -7,13 +7,15 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_air/flash/display/display_object_container.dart';
 import 'package:flutter_air/flash/display/event_dispatcher.dart';
 import 'package:flutter_air/flash/display/graphics_core.dart';
+import 'package:flutter_air/flash/display/i_bitmap_drawable.dart';
 import 'package:flutter_air/flash/display/shader.dart';
 import 'package:flutter_air/flash/display/stage.dart';
 import 'package:flutter_air/flash/geom/matrix.dart';
 import 'package:flutter_air/flash/geom/point.dart';
 import 'package:flutter_air/flash/geom/vector_3d.dart';
 
-abstract class DisplayObject extends EventDispatcher {
+abstract class DisplayObject extends EventDispatcher
+    implements IBitmapDrawable {
   Stage? $stage;
   int $nestLevel = 0;
 
