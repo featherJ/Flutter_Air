@@ -3,9 +3,10 @@
 目前Flutter对于桌面开发的支持还并不完善，跨平台桌面开发目前最通用的就是electron。如果 Flutter 能成为一个流行的跨平台桌面开发框架，那么这个项目可以帮助曾经Air桌面项目开发者，着手使用 Flutter 进行桌面开发。
 ## 官方未解决：
 1. 官方对于更多桌面api和桌面多窗口的支持还在规划中（不知最终多窗口是否可以共用一个引擎）：https://github.com/flutter/flutter/issues/30701
-2. 脏矩形功能目前还没有发布，对于局部变动可能会造成过多的性能开销：https://github.com/flutter/flutter/issues/33939
+2. 脏矩形功能目前还没有发布，对于局部变动可能会造成过多的性能开销：https://github.com/flutter/flutter/issues/33939 【done】
 3. 无法实现同步绘制图片：https://github.com/flutter/flutter/issues/37180
 4. 无法实现同步将Picture转成image：https://github.com/flutter/flutter/issues/77289 【done】
+5. 无法实现反射机制。 
 ## 框架目标：
 1. 舍弃掉Flutter的Framework层，直接使用Flutter的Engine层API，实现 Air 版本的Framework层，实现 Air 的绝大多数 api。
 2. 开发转换器，直接将air桌面项目转为使用该框架的flutter桌面项目。并给出报告让开发者仅需要少量修改。
